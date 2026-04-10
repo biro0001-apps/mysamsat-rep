@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/src/lib/supabase';
-import { Transaction } from '@/src/types';
+import { Transaction, TransactionStatus } from '@/src/types';
 import { 
   Table, 
   TableBody, 
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, FileText, Edit2, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -54,9 +54,6 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
       setTransactions(data || []);
     } catch (err: any) {
       console.error('Error fetching transactions:', err);
-      if (err.message?.includes('Failed to fetch') || err.message?.includes('network')) {
-        alert('Gagal terhubung ke database. Pastikan URL Supabase Anda benar.');
-      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +70,31 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  const getStatusBadge = (status: TransactionStatus) => {
+    switch (status) {
+      case 'Baru':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-100 dark:border-blue-800">
+            <Clock className="w-3 h-3" /> Baru
+          </span>
+        );
+      case 'Berjalan':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-100 dark:border-amber-800">
+            <ArrowRight className="w-3 h-3" /> Berjalan
+          </span>
+        );
+      case 'Selesai':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-100 dark:border-emerald-800">
+            <CheckCircle className="w-3 h-3" /> Selesai
+          </span>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -105,13 +127,13 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
           <Table>
             <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
               <TableRow className="dark:border-slate-800">
+                <TableHead className="font-semibold dark:text-slate-400">Status</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">Tanggal</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">Nama Pemilik</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">No. Polisi</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">Layanan</TableHead>
-                <TableHead className="font-semibold dark:text-slate-400">Kelengkapan</TableHead>
                 <TableHead className="font-semibold text-right dark:text-slate-400">Total</TableHead>
-                <TableHead className="font-semibold text-center dark:text-slate-400">File</TableHead>
+                <TableHead className="font-semibold text-center dark:text-slate-400">Dokumen</TableHead>
                 <TableHead className="font-semibold text-center dark:text-slate-400">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -131,7 +153,8 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
               ) : (
                 filteredTransactions.map((t) => (
                   <TableRow key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800">
-                    <TableCell className="text-slate-600 dark:text-slate-400">
+                    <TableCell>{getStatusBadge(t.status)}</TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400 text-xs">
                       {format(new Date(t.created_at), 'dd MMM yyyy', { locale: localeId })}
                     </TableCell>
                     <TableCell className="font-medium text-slate-900 dark:text-slate-200">{t.owner_name}</TableCell>
@@ -144,48 +167,30 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                       <div className="text-xs text-slate-500 dark:text-slate-500">{t.vehicle_type}</div>
                       <div className="text-sm dark:text-slate-300">{t.service_type}</div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {t.document_completeness?.map((doc) => (
-                          <span key={doc} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded">
-                            <CheckCircle2 className="w-2 h-2" />
-                            {doc}
-                          </span>
-                        ))}
-                        {(!t.document_completeness || t.document_completeness.length === 0) && (
-                          <span className="text-xs text-slate-400 italic">Belum ada</span>
-                        )}
-                      </div>
-                    </TableCell>
                     <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(t.total_amount || t.amount || 0)}
+                      {formatCurrency(t.total_amount || 0)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {t.attachment_url && (
-                          <a 
-                            href={t.attachment_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-full transition-colors"
-                            title="Lampiran Baru"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </a>
-                        )}
-                        {t.old_document_url && (
-                          <a 
-                            href={t.old_document_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-full transition-colors"
-                            title="Dokumen Lama"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </a>
-                        )}
-                        {!t.attachment_url && !t.old_document_url && (
-                          <span className="text-slate-300 dark:text-slate-700">-</span>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {t.documents?.map((doc) => (
+                          <div key={doc.type} className="flex flex-col items-center gap-0.5" title={doc.type}>
+                            <span className="text-[8px] font-black text-slate-400 uppercase">{doc.type}</span>
+                            <div className="flex gap-0.5">
+                              {doc.old_url && (
+                                <a href={doc.old_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded hover:text-blue-600 transition-colors">
+                                  <FileText className="w-3 h-3" />
+                                </a>
+                              )}
+                              {doc.new_url && (
+                                <a href={doc.new_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded hover:text-emerald-700 transition-colors">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {(!t.documents || t.documents.length === 0) && (
+                          <span className="text-xs text-slate-300">-</span>
                         )}
                       </div>
                     </TableCell>

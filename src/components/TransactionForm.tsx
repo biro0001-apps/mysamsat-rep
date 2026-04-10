@@ -11,8 +11,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { VehicleType, ServiceType, Transaction } from '@/src/types';
-import { Save, RefreshCw, Upload, FileText, X } from 'lucide-react';
+import { VehicleType, ServiceType, Transaction, TransactionStatus, TransactionDocument } from '@/src/types';
+import { Save, RefreshCw, Upload, FileText, X, CheckCircle2, ArrowRight, Clock, CheckCircle } from 'lucide-react';
 
 const VEHICLE_TYPES: VehicleType[] = ['Motor', 'Mobil', 'Truk', 'Bus', 'Lainnya'];
 const SERVICE_TYPES: ServiceType[] = [
@@ -24,7 +24,7 @@ const SERVICE_TYPES: ServiceType[] = [
   'STNK Baru'
 ];
 
-const COMPLETENESS_OPTIONS = ['BPKB', 'STNK', 'Cek Fisik', 'KTP', 'Lainnya'];
+const DOCUMENT_TYPES = ['BPKB', 'STNK', 'Cek Fisik', 'KTP', 'Lainnya'];
 
 interface TransactionFormProps {
   onSuccess?: () => void;
@@ -34,8 +34,12 @@ interface TransactionFormProps {
 
 export default function TransactionForm({ onSuccess, editingTransaction, onCancel }: TransactionFormProps) {
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [oldDocFile, setOldDocFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<TransactionStatus>('Baru');
+  
+  // Files state: { [docType]: File }
+  const [oldFiles, setOldFiles] = useState<Record<string, File>>({});
+  const [newFiles, setNewFiles] = useState<Record<string, File>>({});
+
   const [formData, setFormData] = useState({
     owner_name: '',
     plate_number: '',
@@ -43,24 +47,29 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     service_type: 'Perpanjangan Tahunan' as ServiceType,
     tax_amount: '',
     service_fee: '',
+    estimated_amount: '',
     notes: '',
-    document_completeness: [] as string[]
+    selected_docs: [] as string[]
   });
 
   const [totalAmount, setTotalAmount] = useState(0);
 
   useEffect(() => {
     if (editingTransaction) {
+      setStatus(editingTransaction.status);
       setFormData({
         owner_name: editingTransaction.owner_name,
         plate_number: editingTransaction.plate_number,
         vehicle_type: editingTransaction.vehicle_type,
         service_type: editingTransaction.service_type,
-        tax_amount: editingTransaction.tax_amount.toString(),
-        service_fee: editingTransaction.service_fee.toString(),
+        tax_amount: editingTransaction.tax_amount?.toString() || '',
+        service_fee: editingTransaction.service_fee?.toString() || '',
+        estimated_amount: editingTransaction.estimated_amount?.toString() || '',
         notes: editingTransaction.notes || '',
-        document_completeness: editingTransaction.document_completeness || []
+        selected_docs: editingTransaction.documents?.map(d => d.type) || []
       });
+    } else {
+      setStatus('Baru');
     }
   }, [editingTransaction]);
 
@@ -70,20 +79,34 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     setTotalAmount(tax + fee);
   }, [formData.tax_amount, formData.service_fee]);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, type: 'new' | 'old') => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, docType: string, isNew: boolean) => {
     if (e.target.files && e.target.files[0]) {
-      if (type === 'new') setFile(e.target.files[0]);
-      else setOldDocFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (isNew) {
+        setNewFiles(prev => ({ ...prev, [docType]: file }));
+      } else {
+        setOldFiles(prev => ({ ...prev, [docType]: file }));
+      }
     }
   };
 
-  const toggleCompleteness = (item: string) => {
+  const toggleDocSelection = (docType: string) => {
     setFormData(prev => ({
       ...prev,
-      document_completeness: prev.document_completeness.includes(item)
-        ? prev.document_completeness.filter(i => i !== item)
-        : [...prev.document_completeness, item]
+      selected_docs: prev.selected_docs.includes(docType)
+        ? prev.selected_docs.filter(d => d !== docType)
+        : [...prev.selected_docs, docType]
     }));
+  };
+
+  const uploadFile = async (file: File, userId: string, prefix: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${prefix}_${Math.random()}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+    const { error: uploadError } = await supabase.storage.from('attachments').upload(filePath, file);
+    if (uploadError) throw uploadError;
+    const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(filePath);
+    return publicUrl;
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -94,43 +117,36 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      let attachment_url = editingTransaction?.attachment_url || '';
-      let old_document_url = editingTransaction?.old_document_url || '';
+      // Prepare documents array
+      const documents: TransactionDocument[] = await Promise.all(
+        formData.selected_docs.map(async (docType) => {
+          const existingDoc = editingTransaction?.documents?.find(d => d.type === docType);
+          let old_url = existingDoc?.old_url;
+          let new_url = existingDoc?.new_url;
 
-      // Upload New Attachment
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('attachments').upload(filePath, file);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(filePath);
-        attachment_url = publicUrl;
-      }
+          if (oldFiles[docType]) {
+            old_url = await uploadFile(oldFiles[docType], user.id, 'old');
+          }
+          if (newFiles[docType]) {
+            new_url = await uploadFile(newFiles[docType], user.id, 'new');
+          }
 
-      // Upload Old Document
-      if (oldDocFile) {
-        const fileExt = oldDocFile.name.split('.').pop();
-        const fileName = `old_${Math.random()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('attachments').upload(filePath, oldDocFile);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(filePath);
-        old_document_url = publicUrl;
-      }
+          return { type: docType, old_url, new_url };
+        })
+      );
 
       const transactionData = {
         owner_name: formData.owner_name,
         plate_number: formData.plate_number,
         vehicle_type: formData.vehicle_type,
         service_type: formData.service_type,
-        tax_amount: parseFloat(formData.tax_amount),
-        service_fee: parseFloat(formData.service_fee),
+        tax_amount: parseFloat(formData.tax_amount) || 0,
+        service_fee: parseFloat(formData.service_fee) || 0,
+        estimated_amount: parseFloat(formData.estimated_amount) || 0,
         total_amount: totalAmount,
         notes: formData.notes,
-        document_completeness: formData.document_completeness,
-        attachment_url,
-        old_document_url,
+        status,
+        documents,
         user_id: user.id
       };
 
@@ -147,19 +163,6 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         alert('Transaksi berhasil disimpan!');
       }
 
-      setFormData({
-        owner_name: '',
-        plate_number: '',
-        vehicle_type: 'Motor',
-        service_type: 'Perpanjangan Tahunan',
-        tax_amount: '',
-        service_fee: '',
-        notes: '',
-        document_completeness: []
-      });
-      setFile(null);
-      setOldDocFile(null);
-      
       if (onSuccess) onSuccess();
     } catch (err: any) {
       alert('Gagal menyimpan transaksi: ' + err.message);
@@ -168,237 +171,267 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     }
   };
 
+  const renderStageIndicator = () => (
+    <div className="flex items-center justify-center gap-4 mb-8">
+      {[
+        { id: 'Baru', icon: Clock, label: 'Baru' },
+        { id: 'Berjalan', icon: ArrowRight, label: 'Berjalan' },
+        { id: 'Selesai', icon: CheckCircle, label: 'Selesai' }
+      ].map((stage, idx) => (
+        <div key={stage.id} className="flex items-center">
+          <div className={`flex flex-col items-center gap-1 ${status === stage.id ? 'text-blue-600' : 'text-slate-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+              status === stage.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'
+            }`}>
+              <stage.icon className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold">{stage.label}</span>
+          </div>
+          {idx < 2 && <div className="w-12 h-0.5 bg-slate-200 mx-2 mb-4" />}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Card className="border-none shadow-lg dark:bg-slate-900 dark:text-slate-100">
       <CardHeader>
-        <CardTitle>{editingTransaction ? 'Edit Transaksi' : 'Input Transaksi Baru'}</CardTitle>
+        <CardTitle>{editingTransaction ? 'Update Transaksi' : 'Transaksi Baru'}</CardTitle>
         <CardDescription className="dark:text-slate-400">
-          {editingTransaction ? 'Perbarui detail transaksi STNK.' : 'Masukkan detail pengurusan STNK dan hitung total biaya.'}
+          Kelola alur pengurusan STNK dari pendaftaran hingga selesai.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="owner_name">Nama Pemilik</Label>
-            <Input
-              id="owner_name"
-              placeholder="Contoh: Budi Santoso"
-              value={formData.owner_name}
-              onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
-              required
-              className="dark:bg-slate-800 dark:border-slate-700"
-            />
-          </div>
+        {renderStageIndicator()}
 
-          <div className="space-y-2">
-            <Label htmlFor="plate_number">Nomor Polisi</Label>
-            <Input
-              id="plate_number"
-              placeholder="Contoh: B 1234 ABC"
-              value={formData.plate_number}
-              onChange={(e) => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
-              required
-              className="dark:bg-slate-800 dark:border-slate-700"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* STAGE 1: DATA DASAR & DOKUMEN LAMA */}
+          <div className={`space-y-6 ${status !== 'Baru' && 'opacity-60 pointer-events-none'}`}>
+            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
+              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
+              <h3 className="font-bold">Data Kendaraan & Dokumen Masuk</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="owner_name">Nama Pemilik</Label>
+                <Input
+                  id="owner_name"
+                  value={formData.owner_name}
+                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
+                  required
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plate_number">Nomor Polisi</Label>
+                <Input
+                  id="plate_number"
+                  value={formData.plate_number}
+                  onChange={(e) => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
+                  required
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Jenis Kendaraan</Label>
+                <Select
+                  value={formData.vehicle_type}
+                  onValueChange={(v: VehicleType) => setFormData({ ...formData, vehicle_type: v })}
+                >
+                  <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Jenis Layanan</Label>
+                <Select
+                  value={formData.service_type}
+                  onValueChange={(v: ServiceType) => setFormData({ ...formData, service_type: v })}
+                >
+                  <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="vehicle_type">Jenis Kendaraan</Label>
-            <Select
-              value={formData.vehicle_type}
-              onValueChange={(value: VehicleType) => setFormData({ ...formData, vehicle_type: value })}
-            >
-              <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
-                <SelectValue placeholder="Pilih jenis" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                {VEHICLE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-4">
+              <Label>Kelengkapan Dokumen (Upload Dokumen Lama)</Label>
+              <div className="grid grid-cols-1 gap-3">
+                {DOCUMENT_TYPES.map((docType) => (
+                  <div key={docType} className="flex flex-col md:flex-row md:items-center gap-4 p-3 rounded-lg border dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                    <label className="flex items-center gap-3 cursor-pointer min-w-[120px]">
+                      <div 
+                        onClick={() => toggleDocSelection(docType)}
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                          formData.selected_docs.includes(docType)
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700'
+                        }`}
+                      >
+                        {formData.selected_docs.includes(docType) && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className="text-sm font-medium">{docType}</span>
+                    </label>
 
-          <div className="space-y-2">
-            <Label htmlFor="service_type">Jenis Layanan</Label>
-            <Select
-              value={formData.service_type}
-              onValueChange={(value: ServiceType) => setFormData({ ...formData, service_type: value })}
-            >
-              <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
-                <SelectValue placeholder="Pilih layanan" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-                {SERVICE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tax_amount">Bayar Pajak (Rp)</Label>
-            <Input
-              id="tax_amount"
-              type="number"
-              placeholder="0"
-              value={formData.tax_amount}
-              onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
-              required
-              className="dark:bg-slate-800 dark:border-slate-700"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="service_fee">Fee Biro (Rp)</Label>
-            <Input
-              id="service_fee"
-              type="number"
-              placeholder="0"
-              value={formData.service_fee}
-              onChange={(e) => setFormData({ ...formData, service_fee: e.target.value })}
-              required
-              className="dark:bg-slate-800 dark:border-slate-700"
-            />
-          </div>
-
-          <div className="md:col-span-2 space-y-3">
-            <Label>Kelengkapan Dokumen Diterima</Label>
-            <div className="flex flex-wrap gap-4">
-              {COMPLETENESS_OPTIONS.map((item) => (
-                <label key={item} className="flex items-center gap-2 cursor-pointer group">
-                  <div 
-                    onClick={() => toggleCompleteness(item)}
-                    className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      formData.document_completeness.includes(item)
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700'
-                    }`}
-                  >
-                    {formData.document_completeness.includes(item) && (
-                      <Save className="w-3 h-3 text-white" />
+                    {formData.selected_docs.includes(docType) && (
+                      <div className="flex items-center gap-3 flex-1">
+                        <Label
+                          htmlFor={`upload-old-${docType}`}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+                        >
+                          <Upload className="w-3 h-3" />
+                          <span>{oldFiles[docType] ? 'Ganti' : 'Upload Dokumen Lama'}</span>
+                        </Label>
+                        <input
+                          id={`upload-old-${docType}`}
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => handleFileChange(e, docType, false)}
+                        />
+                        {(oldFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.old_url) && (
+                          <div className="flex items-center gap-1 text-xs text-blue-600 font-medium">
+                            <FileText className="w-3 h-3" />
+                            <span className="truncate max-w-[100px]">
+                              {oldFiles[docType]?.name || 'Terupload'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{item}</span>
-                </label>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Upload Lampiran (Baru)</Label>
-            <div className="flex items-center gap-4">
-              <Label
-                htmlFor="file-upload"
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                <span>{file ? 'Ganti File' : 'Pilih File'}</span>
-              </Label>
-              <Input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                onChange={(e) => handleFileChange(e, 'new')}
-                accept="image/*,.pdf"
-              />
-              {file && (
-                <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate max-w-[100px]">{file.name}</span>
-                  <button type="button" onClick={() => setFile(null)}>
-                    <X className="w-4 h-4 text-red-500" />
+          {/* STAGE 2: TRANSAKSI BERJALAN (ESTIMASI) */}
+          <div className={`space-y-6 ${status === 'Baru' && 'opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
+            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+              <h3 className="font-bold">Estimasi & Pembayaran</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="estimated_amount">Estimasi Biaya (Rp)</Label>
+                <Input
+                  id="estimated_amount"
+                  type="number"
+                  value={formData.estimated_amount}
+                  onChange={(e) => setFormData({ ...formData, estimated_amount: e.target.value })}
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tax_amount">Bayar Pajak Riil (Rp)</Label>
+                <Input
+                  id="tax_amount"
+                  type="number"
+                  value={formData.tax_amount}
+                  onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_fee">Fee Biro (Rp)</Label>
+                <Input
+                  id="service_fee"
+                  type="number"
+                  value={formData.service_fee}
+                  onChange={(e) => setFormData({ ...formData, service_fee: e.target.value })}
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* STAGE 3: SELESAI (DOKUMEN BARU) */}
+          <div className={`space-y-6 ${status !== 'Selesai' && 'opacity-40 grayscale'}`}>
+            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
+              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">3</div>
+              <h3 className="font-bold">Finalisasi & Dokumen Baru</h3>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Upload Hasil Pengurusan (Dokumen Baru)</Label>
+              <div className="grid grid-cols-1 gap-3">
+                {formData.selected_docs.map((docType) => (
+                  <div key={`new-${docType}`} className="flex items-center gap-4 p-3 rounded-lg border dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/10">
+                    <span className="text-sm font-bold min-w-[100px]">{docType}</span>
+                    <div className="flex items-center gap-3 flex-1">
+                      <Label
+                        htmlFor={`upload-new-${docType}`}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>{newFiles[docType] ? 'Ganti' : 'Upload Hasil Baru'}</span>
+                      </Label>
+                      <input
+                        id={`upload-new-${docType}`}
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(e, docType, true)}
+                      />
+                      {(newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url) && (
+                        <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span className="truncate max-w-[100px]">
+                            {newFiles[docType]?.name || 'Terupload'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <Label>Status Transaksi</Label>
+              <div className="flex gap-2">
+                {(['Baru', 'Berjalan', 'Selesai'] as TransactionStatus[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      status === s 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
+                        : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
+                    }`}
+                  >
+                    {s}
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>Upload Dokumen Lama</Label>
             <div className="flex items-center gap-4">
-              <Label
-                htmlFor="old-doc-upload"
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                <span>{oldDocFile ? 'Ganti File' : 'Pilih File'}</span>
-              </Label>
-              <Input
-                id="old-doc-upload"
-                type="file"
-                className="hidden"
-                onChange={(e) => handleFileChange(e, 'old')}
-                accept="image/*,.pdf"
-              />
-              {oldDocFile && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 font-medium">
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate max-w-[100px]">{oldDocFile.name}</span>
-                  <button type="button" onClick={() => setOldDocFile(null)}>
-                    <X className="w-4 h-4 text-red-500" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <Label htmlFor="notes">Catatan (Opsional)</Label>
-            <Input
-              id="notes"
-              placeholder="Keterangan tambahan..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="dark:bg-slate-800 dark:border-slate-700"
-            />
-          </div>
-
-          <div className="md:col-span-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Pembayaran</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              {editingTransaction && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onCancel}
-                  className="dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                  Batal
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setFormData({
-                    owner_name: '',
-                    plate_number: '',
-                    vehicle_type: 'Motor',
-                    service_type: 'Perpanjangan Tahunan',
-                    tax_amount: '',
-                    service_fee: '',
-                    notes: '',
-                    document_completeness: []
-                  });
-                  setFile(null);
-                  setOldDocFile(null);
-                }}
-                disabled={loading}
-                className="dark:border-slate-700 dark:hover:bg-slate-800"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" /> Reset
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
-                {loading ? 'Menyimpan...' : (
-                  <><Save className="mr-2 h-4 w-4" /> {editingTransaction ? 'Update Transaksi' : 'Simpan Transaksi'}</>
+              <div className="text-right">
+                <p className="text-xs text-slate-500 font-medium">Total Tagihan</p>
+                <p className="text-2xl font-black text-blue-600">
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {onCancel && (
+                  <Button type="button" variant="ghost" onClick={onCancel}>Batal</Button>
                 )}
-              </Button>
+                <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
+                  {loading ? 'Memproses...' : <><Save className="w-4 h-4 mr-2" /> Simpan Perubahan</>}
+                </Button>
+              </div>
             </div>
           </div>
         </form>

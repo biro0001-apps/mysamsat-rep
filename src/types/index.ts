@@ -8,6 +8,14 @@ export type ServiceType =
   | 'Mutasi Masuk' 
   | 'STNK Baru';
 
+export type TransactionStatus = 'Baru' | 'Berjalan' | 'Selesai';
+
+export interface TransactionDocument {
+  type: string;
+  old_url?: string;
+  new_url?: string;
+}
+
 export interface Transaction {
   id: string;
   created_at: string;
@@ -19,9 +27,9 @@ export interface Transaction {
   tax_amount: number;
   service_fee: number;
   total_amount: number;
-  attachment_url?: string;
-  old_document_url?: string;
-  document_completeness: string[];
+  estimated_amount: number;
+  status: TransactionStatus;
+  documents: TransactionDocument[];
   notes?: string;
 }
 

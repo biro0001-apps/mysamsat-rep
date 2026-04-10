@@ -20,7 +20,9 @@ import {
   CreditCard, 
   Calendar as CalendarIcon,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, subMonths, isWithinInterval } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -55,9 +57,14 @@ export default function Dashboard() {
     isWithinInterval(new Date(t.created_at), { start: startOfMonth(now), end: endOfMonth(now) })
   );
 
-  const totalRevenue = transactions.reduce((sum, t) => sum + (t.total_amount || t.amount || 0), 0);
-  const todayRevenue = todayTransactions.reduce((sum, t) => sum + (t.total_amount || t.amount || 0), 0);
-  const monthRevenue = thisMonthTransactions.reduce((sum, t) => sum + (t.total_amount || t.amount || 0), 0);
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+  const todayRevenue = todayTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+  const monthRevenue = thisMonthTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+
+  const statusCounts = transactions.reduce((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
+    return acc;
+  }, { 'Baru': 0, 'Berjalan': 0, 'Selesai': 0 } as Record<string, number>);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -77,7 +84,7 @@ export default function Dashboard() {
     );
     return {
       name: format(date, 'MMM', { locale: localeId }),
-      total: monthTransactions.reduce((sum, t) => sum + (t.total_amount || t.amount || 0), 0)
+      total: monthTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0)
     };
   });
 
@@ -132,6 +139,28 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Status Summary Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: 'Transaksi Baru', count: statusCounts['Baru'], color: 'bg-blue-600', icon: Clock },
+          { label: 'Sedang Berjalan', count: statusCounts['Berjalan'], color: 'bg-amber-500', icon: ArrowUpRight },
+          { label: 'Selesai', count: statusCounts['Selesai'], color: 'bg-emerald-600', icon: CheckCircle }
+        ].map((item, i) => (
+          <Card key={i} className="border-none shadow-sm dark:bg-slate-900 overflow-hidden group">
+            <div className={`h-1 w-full ${item.color}`} />
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
+                <h3 className="text-3xl font-black mt-1">{item.count}</h3>
+              </div>
+              <div className={`p-4 rounded-2xl ${item.color} text-white shadow-lg shadow-slate-200 dark:shadow-none group-hover:scale-110 transition-transform`}>
+                <item.icon className="w-6 h-6" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
