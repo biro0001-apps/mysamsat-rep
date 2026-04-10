@@ -1,0 +1,5 @@
+{
+  "name": "MySamsat",
+  "description": "A web application for recording and reporting daily STNK transactions with secure login and analytics.",
+  "requestFramePermissions": []
+}
