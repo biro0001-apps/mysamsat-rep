@@ -20,6 +20,8 @@ export interface Transaction {
   service_fee: number;
   total_amount: number;
   attachment_url?: string;
+  old_document_url?: string;
+  document_completeness: string[];
   notes?: string;
 }
 

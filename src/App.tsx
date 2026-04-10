@@ -7,11 +7,13 @@ import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import { User } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'motion/react';
+import { Transaction } from './types';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     // Check current session
@@ -28,6 +30,16 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setActiveTab('new-transaction');
+  };
+
+  const handleSuccess = () => {
+    setEditingTransaction(null);
+    setActiveTab('transactions');
+  };
 
   if (loading) {
     return (
@@ -49,9 +61,18 @@ export default function App() {
       case 'dashboard':
         return <Dashboard />;
       case 'new-transaction':
-        return <TransactionForm onSuccess={() => setActiveTab('transactions')} />;
+        return (
+          <TransactionForm 
+            onSuccess={handleSuccess} 
+            editingTransaction={editingTransaction}
+            onCancel={() => {
+              setEditingTransaction(null);
+              setActiveTab('transactions');
+            }}
+          />
+        );
       case 'transactions':
-        return <TransactionList />;
+        return <TransactionList onEdit={handleEdit} />;
       case 'reports':
         return <Dashboard />; // Reuse dashboard for now as it has charts
       default:

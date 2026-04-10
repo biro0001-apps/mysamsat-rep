@@ -11,12 +11,16 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, FileText } from 'lucide-react';
+import { Search, Filter, Download, FileText, Edit2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 
-export default function TransactionList() {
+interface TransactionListProps {
+  onEdit?: (transaction: Transaction) => void;
+}
+
+export default function TransactionList({ onEdit }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +101,7 @@ export default function TransactionList() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+        <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
               <TableRow className="dark:border-slate-800">
@@ -105,10 +109,10 @@ export default function TransactionList() {
                 <TableHead className="font-semibold dark:text-slate-400">Nama Pemilik</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">No. Polisi</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">Layanan</TableHead>
-                <TableHead className="font-semibold text-right dark:text-slate-400">Pajak</TableHead>
-                <TableHead className="font-semibold text-right dark:text-slate-400">Fee</TableHead>
+                <TableHead className="font-semibold dark:text-slate-400">Kelengkapan</TableHead>
                 <TableHead className="font-semibold text-right dark:text-slate-400">Total</TableHead>
                 <TableHead className="font-semibold text-center dark:text-slate-400">File</TableHead>
+                <TableHead className="font-semibold text-center dark:text-slate-400">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,28 +144,60 @@ export default function TransactionList() {
                       <div className="text-xs text-slate-500 dark:text-slate-500">{t.vehicle_type}</div>
                       <div className="text-sm dark:text-slate-300">{t.service_type}</div>
                     </TableCell>
-                    <TableCell className="text-right text-slate-600 dark:text-slate-400">
-                      {formatCurrency(t.tax_amount || 0)}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-600 dark:text-slate-400">
-                      {formatCurrency(t.service_fee || 0)}
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {t.document_completeness?.map((doc) => (
+                          <span key={doc} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded">
+                            <CheckCircle2 className="w-2 h-2" />
+                            {doc}
+                          </span>
+                        ))}
+                        {(!t.document_completeness || t.document_completeness.length === 0) && (
+                          <span className="text-xs text-slate-400 italic">Belum ada</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
                       {formatCurrency(t.total_amount || t.amount || 0)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {t.attachment_url ? (
-                        <a 
-                          href={t.attachment_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-full transition-colors"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </a>
-                      ) : (
-                        <span className="text-slate-300 dark:text-slate-700">-</span>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        {t.attachment_url && (
+                          <a 
+                            href={t.attachment_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-full transition-colors"
+                            title="Lampiran Baru"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </a>
+                        )}
+                        {t.old_document_url && (
+                          <a 
+                            href={t.old_document_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center p-2 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/30 rounded-full transition-colors"
+                            title="Dokumen Lama"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </a>
+                        )}
+                        {!t.attachment_url && !t.old_document_url && (
+                          <span className="text-slate-300 dark:text-slate-700">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => onEdit?.(t)}
+                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
