@@ -8,7 +8,7 @@ export type ServiceType =
   | 'Mutasi Masuk' 
   | 'STNK Baru';
 
-export type TransactionStatus = 'Baru' | 'Berjalan' | 'Selesai';
+export type TransactionStatus = 'Baru' | 'Berjalan' | 'Selesai' | 'Dibatalkan';
 
 export interface TransactionDocument {
   type: string;

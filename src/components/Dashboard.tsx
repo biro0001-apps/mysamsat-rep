@@ -67,7 +67,7 @@ export default function Dashboard() {
   const statusCounts = transactions.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
-  }, { 'Baru': 0, 'Berjalan': 0, 'Selesai': 0 } as Record<string, number>);
+  }, { 'Baru': 0, 'Berjalan': 0, 'Selesai': 0, 'Dibatalkan': 0 } as Record<string, number>);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {

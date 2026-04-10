@@ -151,6 +151,26 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     }
   };
 
+  const handleCancelTransaction = async () => {
+    if (!editingTransaction) return;
+    if (confirm('Apakah Anda yakin ingin membatalkan transaksi ini? Status akan diubah menjadi Dibatalkan.')) {
+      setLoading(true);
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .update({ status: 'Dibatalkan' })
+          .eq('id', editingTransaction.id);
+        if (error) throw error;
+        alert('Transaksi telah dibatalkan');
+        if (onSuccess) onSuccess();
+      } catch (err: any) {
+        alert('Gagal membatalkan transaksi: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -251,7 +271,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           <div className="space-y-1">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status Transaksi</Label>
             <div className="flex gap-2">
-              {(['Baru', 'Berjalan', 'Selesai'] as TransactionStatus[]).map((s) => (
+              {(['Baru', 'Berjalan', 'Selesai', 'Dibatalkan'] as TransactionStatus[]).map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -261,7 +281,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   }}
                   className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                     status === s 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
+                      ? s === 'Dibatalkan' ? 'bg-red-900 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
                       : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
                   }`}
                 >
@@ -404,7 +424,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="estimated_amount">Estimasi Biaya (Rp)</Label>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-medium leading-none mb-1">Estimasi harga yang diinfokan ke Pelanggan</span>
+                  <Label htmlFor="estimated_amount">Estimasi Biaya (Rp) <span className="text-red-500">*</span></Label>
+                </div>
                 <Input
                   id="estimated_amount"
                   type="number"
@@ -413,6 +436,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                     setFormData({ ...formData, estimated_amount: e.target.value });
                     setIsDirty(true);
                   }}
+                  required
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -509,6 +533,16 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 </p>
               </div>
               <div className="flex gap-2">
+                {editingTransaction && (
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={handleCancelTransaction}
+                    className="bg-red-900 hover:bg-red-950 text-white"
+                  >
+                    Transaksi Dibatalkan
+                  </Button>
+                )}
                 {onCancel && (
                   <Button type="button" variant="ghost" onClick={handleCancel}>Batal</Button>
                 )}

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle, Trash2 } from 'lucide-react';
+import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -118,6 +118,12 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-100 dark:border-emerald-800">
             <CheckCircle className="w-3 h-3" /> Selesai
+          </span>
+        );
+      case 'Dibatalkan':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs font-bold border border-red-100 dark:border-red-800">
+            <X className="w-3 h-3" /> Dibatalkan
           </span>
         );
       default:
