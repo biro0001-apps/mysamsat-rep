@@ -109,6 +109,30 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     return publicUrl;
   };
 
+  const formatPlateNumber = (value: string) => {
+    // Hapus semua karakter non-alfanumerik dan ubah ke uppercase
+    const raw = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    // Pisahkan menjadi 3 bagian: Kode Wilayah (1-2 huruf), Nomor (1-4 angka), Seri (1-3 huruf)
+    const match = raw.match(/^([A-Z]{0,2})([0-9]{0,4})([A-Z]{0,3})/);
+    if (!match) return raw;
+
+    const part1 = match[1];
+    const part2 = match[2];
+    const part3 = match[3];
+
+    let result = part1;
+    if (part2) result += `-${part2}`;
+    if (part3) result += `-${part3}`;
+    
+    return result;
+  };
+
+  const handlePlateChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPlateNumber(e.target.value);
+    setFormData({ ...formData, plate_number: formatted });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -227,10 +251,11 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label htmlFor="plate_number">Nomor Polisi</Label>
                 <Input
                   id="plate_number"
+                  placeholder="Contoh: KT-1234-ABC"
                   value={formData.plate_number}
-                  onChange={(e) => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
+                  onChange={handlePlateChange}
                   required
-                  className="dark:bg-slate-800 dark:border-slate-700"
+                  className="dark:bg-slate-800 dark:border-slate-700 font-mono font-bold"
                 />
               </div>
               <div className="space-y-2">
