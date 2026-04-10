@@ -238,16 +238,6 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="owner_name">Nama Pemilik <span className="text-red-500">*</span></Label>
-                <Input
-                  id="owner_name"
-                  value={formData.owner_name}
-                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value.toUpperCase() })}
-                  required
-                  className="dark:bg-slate-800 dark:border-slate-700 uppercase"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="plate_number">Nomor Polisi <span className="text-red-500">*</span></Label>
                 <Input
                   id="plate_number"
@@ -256,6 +246,16 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   onChange={handlePlateChange}
                   required
                   className="dark:bg-slate-800 dark:border-slate-700 font-mono font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="owner_name">Nama Pemilik <span className="text-red-500">*</span></Label>
+                <Input
+                  id="owner_name"
+                  value={formData.owner_name}
+                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value.toUpperCase() })}
+                  required
+                  className="dark:bg-slate-800 dark:border-slate-700 uppercase"
                 />
               </div>
               <div className="space-y-2">
