@@ -352,7 +352,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 {status !== 'Baru' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
               </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="plate_number">Nomor Polisi <span className="text-red-500">*</span></Label>
                 <Input
@@ -378,6 +378,20 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   }}
                   required
                   className="dark:bg-slate-800 dark:border-slate-700 uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-medium leading-none mb-1">Estimasi harga yang diinfokan ke Pelanggan</span>
+                  <Label htmlFor="estimated_amount">Estimasi Biaya (Rp) <span className="text-red-500">*</span></Label>
+                </div>
+                <Input
+                  id="estimated_amount"
+                  type="text"
+                  value={formData.estimated_amount}
+                  onChange={(e) => handleCurrencyChange(e, 'estimated_amount')}
+                  required
+                  className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
               <div className="space-y-2">
@@ -467,37 +481,23 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           </div>
         </div>
 
-          {/* STAGE 2: TRANSAKSI DIPROSES (ESTIMASI) */}
+          {/* STAGE 2: TRANSAKSI DIPROSES (PEMBAYARAN) */}
           <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-900/10 ring-4 ring-amber-500/10' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-amber-200 dark:shadow-none">2</div>
                   <div>
-                    <h3 className="font-black text-lg">Estimasi & Pembayaran</h3>
+                    <h3 className="font-black text-lg">Pembayaran</h3>
                     <p className="text-xs text-slate-500">Input biaya riil dan fee untuk menghitung laba transaksi.</p>
                   </div>
                 </div>
                 {status === 'Selesai' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-400 font-medium leading-none mb-1">Estimasi harga yang diinfokan ke Pelanggan</span>
-                  <Label htmlFor="estimated_amount">Estimasi Biaya (Rp) <span className="text-red-500">*</span></Label>
-                </div>
-                <Input
-                  id="estimated_amount"
-                  type="text"
-                  value={formData.estimated_amount}
-                  onChange={(e) => handleCurrencyChange(e, 'estimated_amount')}
-                  required
-                  className="dark:bg-slate-800 dark:border-slate-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tax_amount">Bayar Pajak Riil (Rp)</Label>
+                <Label htmlFor="tax_amount">Total Biaya bayar (Rp)</Label>
                 <Input
                   id="tax_amount"
                   type="text"
