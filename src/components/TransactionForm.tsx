@@ -242,9 +242,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Input
                   id="owner_name"
                   value={formData.owner_name}
-                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value.toUpperCase() })}
                   required
-                  className="dark:bg-slate-800 dark:border-slate-700"
+                  className="dark:bg-slate-800 dark:border-slate-700 uppercase"
                 />
               </div>
               <div className="space-y-2">
