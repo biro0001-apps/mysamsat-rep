@@ -47,12 +47,14 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     service_type: 'Perpanjangan Tahunan' as ServiceType,
     tax_amount: '',
     service_fee: '',
+    third_party_fee: '',
     estimated_amount: '',
     notes: '',
     selected_docs: [] as string[]
   });
 
   const [totalAmount, setTotalAmount] = useState(0);
+  const [profit, setProfit] = useState(0);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -64,6 +66,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         service_type: editingTransaction.service_type,
         tax_amount: editingTransaction.tax_amount?.toString() || '',
         service_fee: editingTransaction.service_fee?.toString() || '',
+        third_party_fee: editingTransaction.third_party_fee?.toString() || '',
         estimated_amount: editingTransaction.estimated_amount?.toString() || '',
         notes: editingTransaction.notes || '',
         selected_docs: editingTransaction.documents?.map(d => d.type) || []
@@ -76,8 +79,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
   useEffect(() => {
     const tax = parseFloat(formData.tax_amount) || 0;
     const fee = parseFloat(formData.service_fee) || 0;
+    const thirdParty = parseFloat(formData.third_party_fee) || 0;
     setTotalAmount(tax + fee);
-  }, [formData.tax_amount, formData.service_fee]);
+    setProfit(fee - thirdParty);
+  }, [formData.tax_amount, formData.service_fee, formData.third_party_fee]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>, docType: string, isNew: boolean) => {
     if (e.target.files && e.target.files[0]) {
@@ -166,6 +171,8 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         service_type: formData.service_type,
         tax_amount: parseFloat(formData.tax_amount) || 0,
         service_fee: parseFloat(formData.service_fee) || 0,
+        third_party_fee: parseFloat(formData.third_party_fee) || 0,
+        profit: profit,
         estimated_amount: parseFloat(formData.estimated_amount) || 0,
         total_amount: totalAmount,
         notes: formData.notes,
@@ -345,7 +352,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               <h3 className="font-bold">Estimasi & Pembayaran</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="estimated_amount">Estimasi Biaya (Rp)</Label>
                 <Input
@@ -373,6 +380,16 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   type="number"
                   value={formData.service_fee}
                   onChange={(e) => setFormData({ ...formData, service_fee: e.target.value })}
+                  className="dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="third_party_fee">Fee Pihak Ke-3 (Rp)</Label>
+                <Input
+                  id="third_party_fee"
+                  type="number"
+                  value={formData.third_party_fee}
+                  onChange={(e) => setFormData({ ...formData, third_party_fee: e.target.value })}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -442,7 +459,13 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-xs text-slate-500 font-medium">Laba Bersih</p>
+                <p className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(profit)}
+                </p>
+              </div>
               <div className="text-right">
                 <p className="text-xs text-slate-500 font-medium">Total Tagihan</p>
                 <p className="text-2xl font-black text-blue-600">

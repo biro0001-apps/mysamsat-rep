@@ -59,6 +59,19 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
     }
   };
 
+  const handleUpdateStatus = async (id: string, newStatus: TransactionStatus) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ status: newStatus })
+        .eq('id', id);
+      if (error) throw error;
+      // Real-time will update the list
+    } catch (err: any) {
+      alert('Gagal memperbarui status: ' + err.message);
+    }
+  };
+
   const filteredTransactions = transactions.filter(t => 
     t.owner_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.plate_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -133,6 +146,7 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                 <TableHead className="font-semibold dark:text-slate-400">No. Polisi</TableHead>
                 <TableHead className="font-semibold dark:text-slate-400">Layanan</TableHead>
                 <TableHead className="font-semibold text-right dark:text-slate-400">Total</TableHead>
+                <TableHead className="font-semibold text-right dark:text-slate-400">Laba</TableHead>
                 <TableHead className="font-semibold text-center dark:text-slate-400">Dokumen</TableHead>
                 <TableHead className="font-semibold text-center dark:text-slate-400">Aksi</TableHead>
               </TableRow>
@@ -170,6 +184,9 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                     <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
                       {formatCurrency(t.total_amount || 0)}
                     </TableCell>
+                    <TableCell className={`text-right font-medium ${t.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatCurrency(t.profit || 0)}
+                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         {t.documents?.map((doc) => (
@@ -195,14 +212,36 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => onEdit?.(t)}
-                        className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-center gap-1">
+                        {t.status === 'Baru' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleUpdateStatus(t.id, 'Berjalan')}
+                            className="h-8 text-[10px] font-bold border-amber-200 text-amber-600 hover:bg-amber-50"
+                          >
+                            Mulai Proses
+                          </Button>
+                        )}
+                        {t.status === 'Berjalan' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleUpdateStatus(t.id, 'Selesai')}
+                            className="h-8 text-[10px] font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                          >
+                            Selesaikan
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => onEdit?.(t)}
+                          className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

@@ -26,6 +26,8 @@ export interface Transaction {
   service_type: ServiceType;
   tax_amount: number;
   service_fee: number;
+  third_party_fee: number;
+  profit: number;
   total_amount: number;
   estimated_amount: number;
   status: TransactionStatus;

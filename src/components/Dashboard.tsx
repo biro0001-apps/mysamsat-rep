@@ -12,7 +12,8 @@ import {
   ResponsiveContainer,
   Cell,
   PieChart,
-  Pie
+  Pie,
+  Legend
 } from 'recharts';
 import { 
   TrendingUp, 
@@ -60,6 +61,8 @@ export default function Dashboard() {
   const totalRevenue = transactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
   const todayRevenue = todayTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
   const monthRevenue = thisMonthTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+  const totalProfit = transactions.reduce((sum, t) => sum + (t.profit || 0), 0);
+  const monthProfit = thisMonthTransactions.reduce((sum, t) => sum + (t.profit || 0), 0);
 
   const statusCounts = transactions.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
@@ -84,7 +87,8 @@ export default function Dashboard() {
     );
     return {
       name: format(date, 'MMM', { locale: localeId }),
-      total: monthTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0)
+      total: monthTransactions.reduce((sum, t) => sum + (t.total_amount || 0), 0),
+      profit: monthTransactions.reduce((sum, t) => sum + (t.profit || 0), 0)
     };
   });
 
@@ -100,22 +104,22 @@ export default function Dashboard() {
 
   const stats = [
     {
-      title: 'Pendapatan Hari Ini',
-      value: formatCurrency(todayRevenue),
-      icon: CreditCard,
-      trend: '+12.5%',
-      trendUp: true,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50 dark:bg-blue-900/20'
-    },
-    {
-      title: 'Pendapatan Bulan Ini',
-      value: formatCurrency(monthRevenue),
+      title: 'Laba Bersih Bulan Ini',
+      value: formatCurrency(monthProfit),
       icon: TrendingUp,
-      trend: '+8.2%',
+      trend: '+15.2%',
       trendUp: true,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20'
+    },
+    {
+      title: 'Total Laba',
+      value: formatCurrency(totalProfit),
+      icon: TrendingUp,
+      trend: '+10.4%',
+      trendUp: true,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50 dark:bg-blue-900/20'
     },
     {
       title: 'Total Transaksi',
@@ -127,11 +131,11 @@ export default function Dashboard() {
       bg: 'bg-amber-50 dark:bg-amber-900/20'
     },
     {
-      title: 'Rata-rata Transaksi',
-      value: formatCurrency(transactions.length ? totalRevenue / transactions.length : 0),
-      icon: CalendarIcon,
-      trend: '-2.1%',
-      trendUp: false,
+      title: 'Omzet Bulan Ini',
+      value: formatCurrency(monthRevenue),
+      icon: CreditCard,
+      trend: '+8.2%',
+      trendUp: true,
       color: 'text-purple-600',
       bg: 'bg-purple-50 dark:bg-purple-900/20'
     }
@@ -210,13 +214,11 @@ export default function Dashboard() {
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#f8fafc' }}
                   itemStyle={{ color: '#f8fafc' }}
-                  formatter={(value: number) => [formatCurrency(value), 'Pendapatan']}
+                  formatter={(value: number) => [formatCurrency(value), '']}
                 />
-                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                  {last6Months.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 5 ? '#3b82f6' : '#94a3b8'} />
-                  ))}
-                </Bar>
+                <Legend verticalAlign="top" align="right" iconType="circle" />
+                <Bar dataKey="total" name="Omzet" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="profit" name="Laba" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
