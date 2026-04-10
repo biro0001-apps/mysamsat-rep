@@ -65,10 +65,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         plate_number: editingTransaction.plate_number,
         vehicle_type: editingTransaction.vehicle_type,
         service_type: editingTransaction.service_type,
-        tax_amount: editingTransaction.tax_amount?.toString() || '',
-        service_fee: editingTransaction.service_fee?.toString() || '',
-        third_party_fee: editingTransaction.third_party_fee?.toString() || '',
-        estimated_amount: editingTransaction.estimated_amount?.toString() || '',
+        tax_amount: formatRupiah(editingTransaction.tax_amount?.toString() || ''),
+        service_fee: formatRupiah(editingTransaction.service_fee?.toString() || ''),
+        third_party_fee: formatRupiah(editingTransaction.third_party_fee?.toString() || ''),
+        estimated_amount: formatRupiah(editingTransaction.estimated_amount?.toString() || ''),
         notes: editingTransaction.notes || '',
         selected_docs: editingTransaction.documents?.map(d => d.type) || []
       });
@@ -79,9 +79,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
   }, [editingTransaction]);
 
   useEffect(() => {
-    const tax = parseFloat(formData.tax_amount) || 0;
-    const fee = parseFloat(formData.service_fee) || 0;
-    const thirdParty = parseFloat(formData.third_party_fee) || 0;
+    const tax = parseRupiah(formData.tax_amount);
+    const fee = parseRupiah(formData.service_fee);
+    const thirdParty = parseRupiah(formData.third_party_fee);
     setTotalAmount(tax + fee);
     setProfit(fee - thirdParty);
   }, [formData.tax_amount, formData.service_fee, formData.third_party_fee]);
@@ -133,6 +133,23 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     if (part3) result += `-${part3}`;
     
     return result;
+  };
+
+  const formatRupiah = (value: string) => {
+    const numberString = value.replace(/[^0-9]/g, '');
+    if (!numberString) return '';
+    const number = parseInt(numberString);
+    return new Intl.NumberFormat('id-ID').format(number);
+  };
+
+  const parseRupiah = (value: string) => {
+    return parseFloat(value.replace(/\./g, '')) || 0;
+  };
+
+  const handleCurrencyChange = (e: ChangeEvent<HTMLInputElement>, field: string) => {
+    const formatted = formatRupiah(e.target.value);
+    setFormData(prev => ({ ...prev, [field]: formatted }));
+    setIsDirty(true);
   };
 
   const handlePlateChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -202,11 +219,11 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         plate_number: formData.plate_number,
         vehicle_type: formData.vehicle_type,
         service_type: formData.service_type,
-        tax_amount: parseFloat(formData.tax_amount) || 0,
-        service_fee: parseFloat(formData.service_fee) || 0,
-        third_party_fee: parseFloat(formData.third_party_fee) || 0,
+        tax_amount: parseRupiah(formData.tax_amount),
+        service_fee: parseRupiah(formData.service_fee),
+        third_party_fee: parseRupiah(formData.third_party_fee),
         profit: profit,
-        estimated_amount: parseFloat(formData.estimated_amount) || 0,
+        estimated_amount: parseRupiah(formData.estimated_amount),
         total_amount: totalAmount,
         notes: formData.notes,
         status,
@@ -430,12 +447,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 </div>
                 <Input
                   id="estimated_amount"
-                  type="number"
+                  type="text"
                   value={formData.estimated_amount}
-                  onChange={(e) => {
-                    setFormData({ ...formData, estimated_amount: e.target.value });
-                    setIsDirty(true);
-                  }}
+                  onChange={(e) => handleCurrencyChange(e, 'estimated_amount')}
                   required
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
@@ -444,12 +458,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label htmlFor="tax_amount">Bayar Pajak Riil (Rp)</Label>
                 <Input
                   id="tax_amount"
-                  type="number"
+                  type="text"
                   value={formData.tax_amount}
-                  onChange={(e) => {
-                    setFormData({ ...formData, tax_amount: e.target.value });
-                    setIsDirty(true);
-                  }}
+                  onChange={(e) => handleCurrencyChange(e, 'tax_amount')}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -457,12 +468,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label htmlFor="service_fee">Fee Biro (Rp)</Label>
                 <Input
                   id="service_fee"
-                  type="number"
+                  type="text"
                   value={formData.service_fee}
-                  onChange={(e) => {
-                    setFormData({ ...formData, service_fee: e.target.value });
-                    setIsDirty(true);
-                  }}
+                  onChange={(e) => handleCurrencyChange(e, 'service_fee')}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -470,12 +478,9 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label htmlFor="third_party_fee">Fee Pihak Ke-3 (Rp)</Label>
                 <Input
                   id="third_party_fee"
-                  type="number"
+                  type="text"
                   value={formData.third_party_fee}
-                  onChange={(e) => {
-                    setFormData({ ...formData, third_party_fee: e.target.value });
-                    setIsDirty(true);
-                  }}
+                  onChange={(e) => handleCurrencyChange(e, 'third_party_fee')}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
