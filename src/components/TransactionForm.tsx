@@ -257,7 +257,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     <div className="flex items-center justify-center gap-4 mb-8">
       {[
         { id: 'Baru', icon: Clock, label: 'Baru' },
-        { id: 'Berjalan', icon: ArrowRight, label: 'Berjalan' },
+        { id: 'Diproses', icon: ArrowRight, label: 'Diproses' },
         { id: 'Selesai', icon: CheckCircle, label: 'Selesai' }
       ].map((stage, idx) => (
         <div key={stage.id} className="flex items-center">
@@ -275,6 +275,13 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     </div>
   );
 
+  const isStage2Disabled = !formData.estimated_amount;
+  const isStage3Disabled = !formData.tax_amount || !formData.service_fee;
+  
+  const hasAllNewDocs = formData.selected_docs.length > 0 && formData.selected_docs.every(docType => 
+    newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url
+  );
+
   return (
     <Card className="border-none shadow-lg dark:bg-slate-900 dark:text-slate-100">
       <CardHeader>
@@ -288,35 +295,47 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           <div className="space-y-1">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status Transaksi</Label>
             <div className="flex gap-2">
-              {(['Baru', 'Berjalan', 'Selesai', 'Dibatalkan'] as TransactionStatus[]).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setStatus(s);
-                    setIsDirty(true);
-                  }}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                    status === s 
-                      ? s === 'Dibatalkan' ? 'bg-red-900 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
-                      : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {(['Baru', 'Diproses', 'Selesai', 'Dibatalkan'] as TransactionStatus[]).map((s) => {
+                const isDisabled = 
+                  (s === 'Diproses' && isStage2Disabled) || 
+                  (s === 'Selesai' && (isStage3Disabled || !hasAllNewDocs));
+
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      setStatus(s);
+                      setIsDirty(true);
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      status === s 
+                        ? s === 'Dibatalkan' ? 'bg-red-900 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
+                        : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
+                    } ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:border-blue-300'}`}
+                    title={isDisabled ? 'Lengkapi data tahap sebelumnya' : ''}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
           {renderStageIndicator()}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-12">
           {/* STAGE 1: DATA DASAR & DOKUMEN LAMA */}
-          <div className={`space-y-6 ${status !== 'Baru' && 'opacity-60 pointer-events-none'}`}>
-            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
-              <h3 className="font-bold">Data Kendaraan & Dokumen Masuk</h3>
-            </div>
+          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Baru' ? 'border-blue-500 bg-blue-50/10 dark:bg-blue-900/5' : 'border-slate-100 dark:border-slate-800 opacity-60 pointer-events-none'}`}>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
+                  <h3 className="font-bold">Data Kendaraan & Dokumen Masuk</h3>
+                </div>
+                {status !== 'Baru' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+              </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -432,14 +451,18 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             </div>
           </div>
 
-          {/* STAGE 2: TRANSAKSI BERJALAN (ESTIMASI) */}
-          <div className={`space-y-6 ${status === 'Baru' && 'opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
-            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-              <h3 className="font-bold">Estimasi & Pembayaran</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* STAGE 2: TRANSAKSI DIPROSES (ESTIMASI) */}
+          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/10 dark:bg-amber-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+                  <h3 className="font-bold">Estimasi & Pembayaran</h3>
+                </div>
+                {status === 'Selesai' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <div className="flex flex-col">
                   <span className="text-[10px] text-slate-400 font-medium leading-none mb-1">Estimasi harga yang diinfokan ke Pelanggan</span>
@@ -488,13 +511,16 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           </div>
 
           {/* STAGE 3: SELESAI (DOKUMEN BARU) */}
-          <div className={`space-y-6 ${status !== 'Selesai' && 'opacity-40 grayscale'}`}>
-            <div className="flex items-center gap-2 pb-2 border-b dark:border-slate-800">
-              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">3</div>
-              <h3 className="font-bold">Finalisasi & Dokumen Baru</h3>
-            </div>
+          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/10 dark:bg-emerald-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'}`}>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">3</div>
+                  <h3 className="font-bold">Finalisasi & Dokumen Baru</h3>
+                </div>
+              </div>
 
-            <div className="space-y-4">
+              <div className="space-y-4">
               <Label>Upload Hasil Pengurusan (Dokumen Baru)</Label>
               <div className="grid grid-cols-1 gap-3">
                 {formData.selected_docs.map((docType) => (
@@ -545,7 +571,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                     onClick={handleCancelTransaction}
                     className="bg-red-900 hover:bg-red-950 text-white"
                   >
-                    Transaksi Dibatalkan
+                    Batalkan Transaksi
                   </Button>
                 )}
                 {onCancel && (

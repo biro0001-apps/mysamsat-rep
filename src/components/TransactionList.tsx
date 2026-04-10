@@ -108,10 +108,10 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
             <Clock className="w-3 h-3" /> Baru
           </span>
         );
-      case 'Berjalan':
+      case 'Diproses':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-100 dark:border-amber-800">
-            <ArrowRight className="w-3 h-3" /> Berjalan
+            <ArrowRight className="w-3 h-3" /> Diproses
           </span>
         );
       case 'Selesai':
@@ -238,13 +238,13 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleUpdateStatus(t.id, 'Berjalan')}
+                            onClick={() => handleUpdateStatus(t.id, 'Diproses')}
                             className="h-8 text-[10px] font-bold border-amber-200 text-amber-600 hover:bg-amber-50"
                           >
                             Mulai Proses
                           </Button>
                         )}
-                        {t.status === 'Berjalan' && (
+                        {t.status === 'Diproses' && (
                           <Button 
                             variant="outline" 
                             size="sm" 

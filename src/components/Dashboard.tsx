@@ -67,7 +67,7 @@ export default function Dashboard() {
   const statusCounts = transactions.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
-  }, { 'Baru': 0, 'Berjalan': 0, 'Selesai': 0, 'Dibatalkan': 0 } as Record<string, number>);
+  }, { 'Baru': 0, 'Diproses': 0, 'Selesai': 0, 'Dibatalkan': 0 } as Record<string, number>);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -147,7 +147,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'Transaksi Baru', count: statusCounts['Baru'], color: 'bg-blue-600', icon: Clock },
-          { label: 'Sedang Berjalan', count: statusCounts['Berjalan'], color: 'bg-amber-500', icon: ArrowUpRight },
+          { label: 'Sedang Diproses', count: statusCounts['Diproses'], color: 'bg-amber-500', icon: ArrowUpRight },
           { label: 'Selesai', count: statusCounts['Selesai'], color: 'bg-emerald-600', icon: CheckCircle }
         ].map((item, i) => (
           <Card key={i} className="border-none shadow-sm dark:bg-slate-900 overflow-hidden group">
