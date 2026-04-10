@@ -57,6 +57,12 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
   const [profit, setProfit] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
 
+  const hasAllNewDocs = formData.selected_docs.length > 0 && formData.selected_docs.every(docType => 
+    newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url
+  );
+  const isStage2Disabled = !formData.tax_amount || !formData.service_fee;
+  const isStage3Disabled = !hasAllNewDocs;
+
   useEffect(() => {
     if (editingTransaction) {
       setStatus(editingTransaction.status);
@@ -190,6 +196,23 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.estimated_amount || parseRupiah(formData.estimated_amount) <= 0) {
+      alert('Gagal: Nilai Estimasi Biaya wajib diisi.');
+      return;
+    }
+
+    if (status === 'Diproses' && isStage2Disabled) {
+      alert('Gagal: Box Pembayaran (Total Biaya bayar & Fee Biro) wajib diisi untuk status Diproses.');
+      return;
+    }
+
+    if (status === 'Selesai' && isStage3Disabled) {
+      alert('Gagal: Semua dokumen baru wajib diupload untuk status Selesai.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -275,13 +298,6 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     </div>
   );
 
-  const isStage2Disabled = !formData.estimated_amount;
-  const isStage3Disabled = !formData.tax_amount || !formData.service_fee;
-  
-  const hasAllNewDocs = formData.selected_docs.length > 0 && formData.selected_docs.every(docType => 
-    newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url
-  );
-
   return (
     <Card className="border-none shadow-lg dark:bg-slate-900 dark:text-slate-100">
       <CardHeader>
@@ -301,15 +317,12 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 const isDisabled = isS2Locked || isS3Locked;
 
                 const handleClick = () => {
-                  if (isS2Locked) {
-                    alert('Tahap Diproses terkunci: Mohon isi Nilai Estimasi Biaya terlebih dahulu.');
+                  if (s === 'Diproses' && isStage2Disabled) {
+                    alert('Tahap Diproses terkunci: Mohon isi rincian di box Pembayaran (Total Biaya bayar & Fee Biro) terlebih dahulu.');
                     return;
                   }
-                  if (isS3Locked) {
-                    let message = 'Tahap Selesai terkunci:';
-                    if (isStage3Disabled) message += '\n- Mohon isi Biaya Pajak Riil dan Fee Biro.';
-                    if (!hasAllNewDocs) message += '\n- Mohon upload semua Dokumen Baru (Hasil Pengurusan).';
-                    alert(message);
+                  if (s === 'Selesai' && isStage3Disabled) {
+                    alert('Tahap Selesai terkunci: Mohon upload semua Dokumen Baru (Hasil Pengurusan) terlebih dahulu.');
                     return;
                   }
                   setStatus(s);
