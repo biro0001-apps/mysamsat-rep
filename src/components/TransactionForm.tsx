@@ -450,6 +450,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               </div>
             </div>
           </div>
+        </div>
 
           {/* STAGE 2: TRANSAKSI DIPROSES (ESTIMASI) */}
           <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/10 dark:bg-amber-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
@@ -509,6 +510,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               </div>
             </div>
           </div>
+        </div>
 
           {/* STAGE 3: SELESAI (DOKUMEN BARU) */}
           <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/10 dark:bg-emerald-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'}`}>
@@ -554,6 +556,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               </div>
             </div>
           </div>
+        </div>
 
           <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-end gap-6">
             <div className="flex items-center gap-6">
