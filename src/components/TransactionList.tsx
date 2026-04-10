@@ -15,6 +15,7 @@ import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRi
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface TransactionListProps {
   onEdit?: (transaction: Transaction) => void;
@@ -89,14 +90,20 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
 
   const handleDelete = async (id: string, plate: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus transaksi untuk plat nomor ${plate}? Data yang dihapus tidak dapat dikembalikan.`)) {
+      // Optimistic update
+      const previousTransactions = [...transactions];
+      setTransactions(transactions.filter(t => t.id !== id));
+
       try {
         const { error } = await supabase
           .from('transactions')
           .delete()
           .eq('id', id);
         if (error) throw error;
-        alert('Transaksi berhasil dihapus');
+        // No alert for seamless experience
       } catch (err: any) {
+        // Rollback on error
+        setTransactions(previousTransactions);
         alert('Gagal menghapus transaksi: ' + err.message);
       }
     }
@@ -188,108 +195,117 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-slate-400">
-                    Memuat data...
-                  </TableCell>
-                </TableRow>
-              ) : filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-slate-400">
-                    Tidak ada transaksi ditemukan.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTransactions.map((t) => (
-                  <TableRow key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800">
-                    <TableCell>{getStatusBadge(t.status)}</TableCell>
-                    <TableCell className="text-slate-600 dark:text-slate-400 text-xs">
-                      {format(new Date(t.created_at), 'dd MMM yyyy', { locale: localeId })}
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-900 dark:text-slate-200">{t.owner_name}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                        {t.plate_number}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-slate-500 dark:text-slate-500">{t.vehicle_type}</div>
-                      <div className="text-sm dark:text-slate-300">{t.service_type}</div>
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(t.total_amount || 0)}
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${t.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {formatCurrency(t.profit || 0)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {t.documents?.map((doc) => (
-                          <div key={doc.type} className="flex flex-col items-center gap-0.5" title={doc.type}>
-                            <span className="text-[8px] font-black text-slate-400 uppercase">{doc.type}</span>
-                            <div className="flex gap-0.5">
-                              {doc.old_url && (
-                                <a href={doc.old_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded hover:text-blue-600 transition-colors">
-                                  <FileText className="w-3 h-3" />
-                                </a>
-                              )}
-                              {doc.new_url && (
-                                <a href={doc.new_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded hover:text-emerald-700 transition-colors">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {(!t.documents || t.documents.length === 0) && (
-                          <span className="text-xs text-slate-300">-</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {t.status === 'Baru' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleUpdateStatus(t, 'Diproses')}
-                            className="h-8 text-[10px] font-bold border-amber-200 text-amber-600 hover:bg-amber-50"
-                          >
-                            Mulai Proses
-                          </Button>
-                        )}
-                        {t.status === 'Diproses' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleUpdateStatus(t, 'Selesai')}
-                            className="h-8 text-[10px] font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                          >
-                            Selesaikan
-                          </Button>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => onEdit?.(t)}
-                          className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDelete(t.id, t.plate_number)}
-                          className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+              <AnimatePresence initial={false}>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10 text-slate-400">
+                      Memuat data...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ) : filteredTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-10 text-slate-400">
+                      Tidak ada transaksi ditemukan.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTransactions.map((t) => (
+                    <motion.tr
+                      key={t.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800 border-b last:border-0"
+                    >
+                      <TableCell>{getStatusBadge(t.status)}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-400 text-xs">
+                        {format(new Date(t.created_at), 'dd MMM yyyy', { locale: localeId })}
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-900 dark:text-slate-200">{t.owner_name}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                          {t.plate_number}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs text-slate-500 dark:text-slate-500">{t.vehicle_type}</div>
+                        <div className="text-sm dark:text-slate-300">{t.service_type}</div>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
+                        {formatCurrency(t.total_amount || 0)}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${t.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {formatCurrency(t.profit || 0)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {t.documents?.map((doc) => (
+                            <div key={doc.type} className="flex flex-col items-center gap-0.5" title={doc.type}>
+                              <span className="text-[8px] font-black text-slate-400 uppercase">{doc.type}</span>
+                              <div className="flex gap-0.5">
+                                {doc.old_url && (
+                                  <a href={doc.old_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded hover:text-blue-600 transition-colors">
+                                    <FileText className="w-3 h-3" />
+                                  </a>
+                                )}
+                                {doc.new_url && (
+                                  <a href={doc.new_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded hover:text-emerald-700 transition-colors">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {(!t.documents || t.documents.length === 0) && (
+                            <span className="text-xs text-slate-300">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {t.status === 'Baru' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleUpdateStatus(t, 'Diproses')}
+                              className="h-8 text-[10px] font-bold border-amber-200 text-amber-600 hover:bg-amber-50"
+                            >
+                              Mulai Proses
+                            </Button>
+                          )}
+                          {t.status === 'Diproses' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleUpdateStatus(t, 'Selesai')}
+                              className="h-8 text-[10px] font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                            >
+                              Selesaikan
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => onEdit?.(t)}
+                            className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDelete(t.id, t.plate_number)}
+                            className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </motion.tr>
+                  ))
+                )}
+              </AnimatePresence>
             </TableBody>
           </Table>
         </div>
