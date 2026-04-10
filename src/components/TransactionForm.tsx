@@ -296,25 +296,37 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status Transaksi</Label>
             <div className="flex gap-2">
               {(['Baru', 'Diproses', 'Selesai', 'Dibatalkan'] as TransactionStatus[]).map((s) => {
-                const isDisabled = 
-                  (s === 'Diproses' && isStage2Disabled) || 
-                  (s === 'Selesai' && (isStage3Disabled || !hasAllNewDocs));
+                const isS2Locked = s === 'Diproses' && isStage2Disabled;
+                const isS3Locked = s === 'Selesai' && (isStage3Disabled || !hasAllNewDocs);
+                const isDisabled = isS2Locked || isS3Locked;
+
+                const handleClick = () => {
+                  if (isS2Locked) {
+                    alert('Tahap Diproses terkunci: Mohon isi Nilai Estimasi Biaya terlebih dahulu.');
+                    return;
+                  }
+                  if (isS3Locked) {
+                    let message = 'Tahap Selesai terkunci:';
+                    if (isStage3Disabled) message += '\n- Mohon isi Biaya Pajak Riil dan Fee Biro.';
+                    if (!hasAllNewDocs) message += '\n- Mohon upload semua Dokumen Baru (Hasil Pengurusan).';
+                    alert(message);
+                    return;
+                  }
+                  setStatus(s);
+                  setIsDirty(true);
+                };
 
                 return (
                   <button
                     key={s}
                     type="button"
-                    disabled={isDisabled}
-                    onClick={() => {
-                      setStatus(s);
-                      setIsDirty(true);
-                    }}
+                    onClick={handleClick}
                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                       status === s 
                         ? s === 'Dibatalkan' ? 'bg-red-900 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
                         : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
-                    } ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:border-blue-300'}`}
-                    title={isDisabled ? 'Lengkapi data tahap sebelumnya' : ''}
+                    } ${isDisabled ? 'opacity-40 grayscale cursor-help' : 'hover:border-blue-300'}`}
+                    title={isDisabled ? 'Klik untuk melihat syarat' : ''}
                   >
                     {s}
                   </button>
@@ -327,14 +339,17 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
 
         <form onSubmit={handleSubmit} className="space-y-12">
           {/* STAGE 1: DATA DASAR & DOKUMEN LAMA */}
-          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Baru' ? 'border-blue-500 bg-blue-50/10 dark:bg-blue-900/5' : 'border-slate-100 dark:border-slate-800 opacity-60 pointer-events-none'}`}>
+          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Baru' ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-900/10 ring-4 ring-blue-500/10' : 'border-slate-100 dark:border-slate-800 opacity-60 pointer-events-none'}`}>
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
-                  <h3 className="font-bold">Data Kendaraan & Dokumen Masuk</h3>
+              <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-blue-200 dark:shadow-none">1</div>
+                  <div>
+                    <h3 className="font-black text-lg">Data Kendaraan & Dokumen Masuk</h3>
+                    <p className="text-xs text-slate-500">Informasi dasar dan berkas fisik yang diterima dari pelanggan.</p>
+                  </div>
                 </div>
-                {status !== 'Baru' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                {status !== 'Baru' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
               </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -453,14 +468,17 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </div>
 
           {/* STAGE 2: TRANSAKSI DIPROSES (ESTIMASI) */}
-          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/10 dark:bg-amber-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
+          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-900/10 ring-4 ring-amber-500/10' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</div>
-                  <h3 className="font-bold">Estimasi & Pembayaran</h3>
+              <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-amber-200 dark:shadow-none">2</div>
+                  <div>
+                    <h3 className="font-black text-lg">Estimasi & Pembayaran</h3>
+                    <p className="text-xs text-slate-500">Input biaya riil dan fee untuk menghitung laba transaksi.</p>
+                  </div>
                 </div>
-                {status === 'Selesai' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                {status === 'Selesai' && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -513,12 +531,15 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </div>
 
           {/* STAGE 3: SELESAI (DOKUMEN BARU) */}
-          <div className={`p-6 rounded-2xl border-2 transition-all ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/10 dark:bg-emerald-900/5' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'}`}>
+          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-900/10 ring-4 ring-emerald-500/10' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'}`}>
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-2 border-b dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">3</div>
-                  <h3 className="font-bold">Finalisasi & Dokumen Baru</h3>
+              <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-lg shadow-emerald-200 dark:shadow-none">3</div>
+                  <div>
+                    <h3 className="font-black text-lg">Finalisasi & Dokumen Baru</h3>
+                    <p className="text-xs text-slate-500">Upload hasil pengurusan untuk diserahkan ke pelanggan.</p>
+                  </div>
                 </div>
               </div>
 

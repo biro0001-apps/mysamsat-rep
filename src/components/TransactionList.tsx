@@ -59,12 +59,31 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
     }
   };
 
-  const handleUpdateStatus = async (id: string, newStatus: TransactionStatus) => {
+  const handleUpdateStatus = async (t: Transaction, newStatus: TransactionStatus) => {
+    if (newStatus === 'Diproses') {
+      if (!t.estimated_amount || t.estimated_amount <= 0) {
+        alert('Gagal: Nilai Estimasi Biaya wajib diisi sebelum memproses transaksi.');
+        return;
+      }
+    }
+    
+    if (newStatus === 'Selesai') {
+      if (!t.tax_amount || t.tax_amount <= 0 || !t.service_fee || t.service_fee <= 0) {
+        alert('Gagal: Biaya Pajak Riil dan Fee Biro wajib diisi sebelum menyelesaikan transaksi.');
+        return;
+      }
+      const hasAllNewDocs = t.documents?.length > 0 && t.documents.every(doc => doc.new_url);
+      if (!hasAllNewDocs) {
+        alert('Gagal: Semua dokumen baru (hasil pengurusan) wajib diupload sebelum menyelesaikan transaksi.');
+        return;
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('transactions')
         .update({ status: newStatus })
-        .eq('id', id);
+        .eq('id', t.id);
       if (error) throw error;
       // Real-time will update the list
     } catch (err: any) {
@@ -238,7 +257,7 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleUpdateStatus(t.id, 'Diproses')}
+                            onClick={() => handleUpdateStatus(t, 'Diproses')}
                             className="h-8 text-[10px] font-bold border-amber-200 text-amber-600 hover:bg-amber-50"
                           >
                             Mulai Proses
@@ -248,7 +267,7 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => handleUpdateStatus(t.id, 'Selesai')}
+                            onClick={() => handleUpdateStatus(t, 'Selesai')}
                             className="h-8 text-[10px] font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50"
                           >
                             Selesaikan
