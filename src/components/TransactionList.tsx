@@ -63,7 +63,8 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
   const handleUpdateStatus = async (t: Transaction, newStatus: TransactionStatus) => {
     if (newStatus === 'Diproses') {
       if (!t.tax_amount || t.tax_amount <= 0 || !t.service_fee || t.service_fee <= 0) {
-        alert('Gagal: Box Pembayaran (Total Biaya bayar & Fee Biro) wajib diisi sebelum memproses transaksi.');
+        alert('Gagal: Box Pembayaran (Total Biaya bayar & Fee Biro) wajib diisi sebelum memproses transaksi.\n\nSistem akan membuka data ini untuk Anda lengkapi.');
+        onEdit?.(t);
         return;
       }
     }
@@ -71,7 +72,8 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
     if (newStatus === 'Selesai') {
       const hasAllNewDocs = t.documents?.length > 0 && t.documents.every(doc => doc.new_url);
       if (!hasAllNewDocs) {
-        alert('Gagal: Semua dokumen baru (hasil pengurusan) wajib diupload sebelum menyelesaikan transaksi.');
+        alert('Gagal: Semua dokumen baru (hasil pengurusan) wajib diupload sebelum menyelesaikan transaksi.\n\nSistem akan membuka data ini untuk Anda lengkapi.');
+        onEdit?.(t);
         return;
       }
     }
@@ -216,13 +218,16 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, x: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800 border-b last:border-0"
+                      onClick={() => onEdit?.(t)}
+                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800 border-b last:border-0 cursor-pointer group"
                     >
                       <TableCell>{getStatusBadge(t.status)}</TableCell>
                       <TableCell className="text-slate-600 dark:text-slate-400 text-xs">
                         {format(new Date(t.created_at), 'dd MMM yyyy', { locale: localeId })}
                       </TableCell>
-                      <TableCell className="font-medium text-slate-900 dark:text-slate-200">{t.owner_name}</TableCell>
+                      <TableCell className="font-medium text-slate-900 dark:text-slate-200 group-hover:text-blue-600 transition-colors">
+                        {t.owner_name}
+                      </TableCell>
                       <TableCell>
                         <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
                           {t.plate_number}
@@ -238,7 +243,7 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                       <TableCell className={`text-right font-medium ${t.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {formatCurrency(t.profit || 0)}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1.5">
                           {t.documents?.map((doc) => (
                             <div key={doc.type} className="flex flex-col items-center gap-0.5" title={doc.type}>
@@ -262,7 +267,7 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
                           {t.status === 'Baru' && (
                             <Button 

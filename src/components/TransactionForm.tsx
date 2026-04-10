@@ -560,8 +560,14 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               <Label>Upload Hasil Pengurusan (Dokumen Baru)</Label>
               <div className="grid grid-cols-1 gap-3">
                 {formData.selected_docs.map((docType) => (
-                  <div key={`new-${docType}`} className="flex items-center gap-4 p-3 rounded-lg border dark:border-slate-800 bg-emerald-50/30 dark:bg-emerald-900/10">
-                    <span className="text-sm font-bold min-w-[100px]">{docType}</span>
+                  <div key={`new-${docType}`} className="flex flex-col md:flex-row md:items-center gap-4 p-3 rounded-lg border dark:border-slate-800 bg-emerald-50/20 dark:bg-emerald-900/10">
+                    <div className="flex items-center gap-3 min-w-[120px]">
+                      <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm font-bold">{docType}</span>
+                    </div>
+
                     <div className="flex items-center gap-3 flex-1">
                       <Label
                         htmlFor={`upload-new-${docType}`}
@@ -578,8 +584,8 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                       />
                       {(newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url) && (
                         <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span className="truncate max-w-[100px]">
+                          <FileText className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">
                             {newFiles[docType]?.name || 'Terupload'}
                           </span>
                         </div>
