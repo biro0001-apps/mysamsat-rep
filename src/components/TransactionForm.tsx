@@ -238,7 +238,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="owner_name">Nama Pemilik</Label>
+                <Label htmlFor="owner_name">Nama Pemilik <span className="text-red-500">*</span></Label>
                 <Input
                   id="owner_name"
                   value={formData.owner_name}
@@ -248,7 +248,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="plate_number">Nomor Polisi</Label>
+                <Label htmlFor="plate_number">Nomor Polisi <span className="text-red-500">*</span></Label>
                 <Input
                   id="plate_number"
                   placeholder="Contoh: KT-1234-ABC"
@@ -259,7 +259,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 />
               </div>
               <div className="space-y-2">
-                <Label>Jenis Kendaraan</Label>
+                <Label>Jenis Kendaraan <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.vehicle_type}
                   onValueChange={(v: VehicleType) => setFormData({ ...formData, vehicle_type: v })}
@@ -273,7 +273,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Jenis Layanan</Label>
+                <Label>Jenis Layanan <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.service_type}
                   onValueChange={(v: ServiceType) => setFormData({ ...formData, service_type: v })}
