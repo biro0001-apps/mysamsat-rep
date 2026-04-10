@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle } from 'lucide-react';
+import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -69,6 +69,21 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
       // Real-time will update the list
     } catch (err: any) {
       alert('Gagal memperbarui status: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (id: string, plate: string) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus transaksi untuk plat nomor ${plate}? Data yang dihapus tidak dapat dikembalikan.`)) {
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+        alert('Transaksi berhasil dihapus');
+      } catch (err: any) {
+        alert('Gagal menghapus transaksi: ' + err.message);
+      }
     }
   };
 
@@ -240,6 +255,14 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
                           className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
                         >
                           <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(t.id, t.plate_number)}
+                          className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>

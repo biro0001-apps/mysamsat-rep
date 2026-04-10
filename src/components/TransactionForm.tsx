@@ -55,6 +55,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
 
   const [totalAmount, setTotalAmount] = useState(0);
   const [profit, setProfit] = useState(0);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -71,6 +72,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         notes: editingTransaction.notes || '',
         selected_docs: editingTransaction.documents?.map(d => d.type) || []
       });
+      setIsDirty(false);
     } else {
       setStatus('Baru');
     }
@@ -136,6 +138,17 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
   const handlePlateChange = (e: ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPlateNumber(e.target.value);
     setFormData({ ...formData, plate_number: formatted });
+    setIsDirty(true);
+  };
+
+  const handleCancel = () => {
+    if (isDirty) {
+      if (confirm('Ada perubahan yang belum disimpan. Apakah Anda ingin membatalkan dan membuang perubahan?')) {
+        if (onCancel) onCancel();
+      }
+    } else {
+      if (onCancel) onCancel();
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -187,6 +200,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           .update(transactionData)
           .eq('id', editingTransaction.id);
         if (error) throw error;
+        setIsDirty(false);
         alert('Transaksi berhasil diperbarui!');
       } else {
         const { error } = await supabase.from('transactions').insert([transactionData]);
@@ -233,7 +247,31 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {renderStageIndicator()}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border dark:border-slate-800">
+          <div className="space-y-1">
+            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status Transaksi</Label>
+            <div className="flex gap-2">
+              {(['Baru', 'Berjalan', 'Selesai'] as TransactionStatus[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    setStatus(s);
+                    setIsDirty(true);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                    status === s 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
+                      : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          {renderStageIndicator()}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* STAGE 1: DATA DASAR & DOKUMEN LAMA */}
@@ -250,7 +288,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   id="plate_number"
                   placeholder="Contoh: KT-1234-ABC"
                   value={formData.plate_number}
-                  onChange={handlePlateChange}
+                  onChange={(e) => {
+                    handlePlateChange(e);
+                    setIsDirty(true);
+                  }}
                   required
                   className="dark:bg-slate-800 dark:border-slate-700 font-mono font-bold"
                 />
@@ -260,7 +301,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Input
                   id="owner_name"
                   value={formData.owner_name}
-                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value.toUpperCase() })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, owner_name: e.target.value.toUpperCase() });
+                    setIsDirty(true);
+                  }}
                   required
                   className="dark:bg-slate-800 dark:border-slate-700 uppercase"
                 />
@@ -269,7 +313,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label>Jenis Kendaraan <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.vehicle_type}
-                  onValueChange={(v: VehicleType) => setFormData({ ...formData, vehicle_type: v })}
+                  onValueChange={(v: VehicleType) => {
+                    setFormData({ ...formData, vehicle_type: v });
+                    setIsDirty(true);
+                  }}
                 >
                   <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
                     <SelectValue />
@@ -283,7 +330,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                 <Label>Jenis Layanan <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.service_type}
-                  onValueChange={(v: ServiceType) => setFormData({ ...formData, service_type: v })}
+                  onValueChange={(v: ServiceType) => {
+                    setFormData({ ...formData, service_type: v });
+                    setIsDirty(true);
+                  }}
                 >
                   <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
                     <SelectValue />
@@ -359,7 +409,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   id="estimated_amount"
                   type="number"
                   value={formData.estimated_amount}
-                  onChange={(e) => setFormData({ ...formData, estimated_amount: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, estimated_amount: e.target.value });
+                    setIsDirty(true);
+                  }}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -369,7 +422,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   id="tax_amount"
                   type="number"
                   value={formData.tax_amount}
-                  onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, tax_amount: e.target.value });
+                    setIsDirty(true);
+                  }}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -379,7 +435,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   id="service_fee"
                   type="number"
                   value={formData.service_fee}
-                  onChange={(e) => setFormData({ ...formData, service_fee: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, service_fee: e.target.value });
+                    setIsDirty(true);
+                  }}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -389,7 +448,10 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   id="third_party_fee"
                   type="number"
                   value={formData.third_party_fee}
-                  onChange={(e) => setFormData({ ...formData, third_party_fee: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, third_party_fee: e.target.value });
+                    setIsDirty(true);
+                  }}
                   className="dark:bg-slate-800 dark:border-slate-700"
                 />
               </div>
@@ -438,34 +500,8 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
             </div>
           </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-1">
-              <Label>Status Transaksi</Label>
-              <div className="flex gap-2">
-                {(['Baru', 'Berjalan', 'Selesai'] as TransactionStatus[]).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatus(s)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                      status === s 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
-                        : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-end gap-6">
             <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-xs text-slate-500 font-medium">Laba Bersih</p>
-                <p className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(profit)}
-                </p>
-              </div>
               <div className="text-right">
                 <p className="text-xs text-slate-500 font-medium">Total Tagihan</p>
                 <p className="text-2xl font-black text-blue-600">
@@ -474,7 +510,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               </div>
               <div className="flex gap-2">
                 {onCancel && (
-                  <Button type="button" variant="ghost" onClick={onCancel}>Batal</Button>
+                  <Button type="button" variant="ghost" onClick={handleCancel}>Batal</Button>
                 )}
                 <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
                   {loading ? 'Memproses...' : <><Save className="w-4 h-4 mr-2" /> Simpan Perubahan</>}
