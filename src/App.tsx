@@ -14,6 +14,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     // Check current session
@@ -33,11 +34,13 @@ export default function App() {
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
+    setFormKey(prev => prev + 1);
     setActiveTab('new-transaction');
   };
 
   const handleNewTransaction = () => {
     setEditingTransaction(null);
+    setFormKey(prev => prev + 1);
     setActiveTab('new-transaction');
   };
 
@@ -68,6 +71,7 @@ export default function App() {
       case 'new-transaction':
         return (
           <TransactionForm 
+            key={formKey}
             onSuccess={handleSuccess} 
             editingTransaction={editingTransaction}
             onCancel={() => {

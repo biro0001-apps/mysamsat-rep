@@ -27,6 +27,7 @@ const SERVICE_TYPES: ServiceType[] = [
 const DOCUMENT_TYPES = ['BPKB', 'STNK', 'Cek Fisik', 'KTP', 'Lainnya'];
 
 interface TransactionFormProps {
+  key?: any;
   onSuccess?: () => void;
   editingTransaction?: Transaction | null;
   onCancel?: () => void;
@@ -81,6 +82,21 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
       setIsDirty(false);
     } else {
       setStatus('Baru');
+      setFormData({
+        owner_name: '',
+        plate_number: '',
+        vehicle_type: 'Motor',
+        service_type: 'Perpanjangan Tahunan',
+        tax_amount: '',
+        service_fee: '',
+        third_party_fee: '',
+        estimated_amount: '',
+        notes: '',
+        selected_docs: []
+      });
+      setOldFiles({});
+      setNewFiles({});
+      setIsDirty(false);
     }
   }, [editingTransaction]);
 
