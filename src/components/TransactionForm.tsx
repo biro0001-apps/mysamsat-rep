@@ -456,7 +456,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </div>
 
           {/* STAGE 2: TRANSAKSI DIPROSES (PEMBAYARAN) */}
-          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-900/10 ring-4 ring-amber-500/10' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
+          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Diproses' ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-900/10 ring-4 ring-amber-500/10' : (status === 'Baru' ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale')} ${status === 'Selesai' && 'opacity-60 pointer-events-none'}`}>
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
@@ -505,7 +505,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </div>
 
           {/* STAGE 3: SELESAI (DOKUMEN BARU) */}
-          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-900/10 ring-4 ring-emerald-500/10' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale'}`}>
+          <div className={`p-8 rounded-3xl border-2 transition-all shadow-sm ${status === 'Selesai' ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-900/10 ring-4 ring-emerald-500/10' : (status === 'Diproses' ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 dark:border-slate-800 opacity-40 grayscale')}`}>
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b-2 border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3">
