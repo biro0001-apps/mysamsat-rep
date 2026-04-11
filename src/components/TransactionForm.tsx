@@ -307,46 +307,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border dark:border-slate-800">
-          <div className="space-y-1">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status Transaksi</Label>
-            <div className="flex gap-2">
-              {(['Baru', 'Diproses', 'Selesai', 'Dibatalkan'] as TransactionStatus[]).map((s) => {
-                const isS2Locked = s === 'Diproses' && isStage2Disabled;
-                const isS3Locked = s === 'Selesai' && (isStage3Disabled || !hasAllNewDocs);
-                const isDisabled = isS2Locked || isS3Locked;
-
-                const handleClick = () => {
-                  if (s === 'Diproses' && isStage2Disabled) {
-                    alert('Tahap Diproses terkunci: Mohon isi rincian di box Pembayaran (Total Biaya bayar & Fee Biro) terlebih dahulu.');
-                    return;
-                  }
-                  if (s === 'Selesai' && isStage3Disabled) {
-                    alert('Tahap Selesai terkunci: Mohon upload semua Dokumen Baru (Hasil Pengurusan) terlebih dahulu.');
-                    return;
-                  }
-                  setStatus(s);
-                  setIsDirty(true);
-                };
-
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={handleClick}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                      status === s 
-                        ? s === 'Dibatalkan' ? 'bg-red-900 text-white' : 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none' 
-                        : 'bg-white dark:bg-slate-800 text-slate-500 border dark:border-slate-700'
-                    } ${isDisabled ? 'opacity-40 grayscale cursor-help' : 'hover:border-blue-300'}`}
-                    title={isDisabled ? 'Klik untuk melihat syarat' : ''}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="mb-10 pt-2">
           {renderStageIndicator()}
         </div>
 
@@ -599,7 +560,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
         </div>
 
           <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
+            <div className="flex items-center gap-4">
               {editingTransaction && (
                 <Button 
                   type="button" 
@@ -610,6 +571,35 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                   Batalkan Transaksi
                 </Button>
               )}
+              
+              <div className="flex flex-col gap-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Status</Label>
+                <Select 
+                  value={status} 
+                  onValueChange={(v: TransactionStatus) => {
+                    if (v === 'Diproses' && isStage2Disabled) {
+                      alert('Tahap Diproses terkunci: Mohon isi rincian di box Pembayaran terlebih dahulu.');
+                      return;
+                    }
+                    if (v === 'Selesai' && isStage3Disabled) {
+                      alert('Tahap Selesai terkunci: Mohon upload semua Dokumen Baru terlebih dahulu.');
+                      return;
+                    }
+                    setStatus(v);
+                    setIsDirty(true);
+                  }}
+                >
+                  <SelectTrigger className="w-[140px] h-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 font-bold text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Baru">Baru</SelectItem>
+                    <SelectItem value="Diproses">Diproses</SelectItem>
+                    <SelectItem value="Selesai">Selesai</SelectItem>
+                    <SelectItem value="Dibatalkan">Dibatalkan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex items-center gap-8">
