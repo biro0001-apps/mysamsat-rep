@@ -23,12 +23,18 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  CheckCircle
+  CheckCircle,
+  PlusCircle
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, format, subMonths, isWithinInterval } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
-export default function Dashboard() {
+interface DashboardProps {
+  onNew?: () => void;
+}
+
+export default function Dashboard({ onNew }: DashboardProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -143,6 +149,21 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white">Ringkasan Bisnis</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Pantau performa dan status pengurusan hari ini.</p>
+        </div>
+        <Button 
+          onClick={onNew}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 gap-2 self-start md:self-center"
+        >
+          <PlusCircle className="w-5 h-5" />
+          Transaksi Baru
+        </Button>
+      </div>
+
       {/* Status Summary Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[

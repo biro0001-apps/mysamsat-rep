@@ -59,7 +59,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNew={() => setActiveTab('new-transaction')} />;
       case 'new-transaction':
         return (
           <TransactionForm 
@@ -72,9 +72,9 @@ export default function App() {
           />
         );
       case 'transactions':
-        return <TransactionList onEdit={handleEdit} />;
+        return <TransactionList onEdit={handleEdit} onNew={() => setActiveTab('new-transaction')} />;
       case 'reports':
-        return <Dashboard />; // Reuse dashboard for now as it has charts
+        return <Dashboard onNew={() => setActiveTab('new-transaction')} />; // Reuse dashboard for now as it has charts
       default:
         return <Dashboard />;
     }

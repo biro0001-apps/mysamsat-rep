@@ -45,7 +45,6 @@ export default function Layout({ children, activeTab, setActiveTab, userEmail }:
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'new-transaction', label: 'Transaksi Baru', icon: PlusCircle },
     { id: 'transactions', label: 'Daftar Transaksi', icon: ListOrdered },
     { id: 'reports', label: 'Laporan', icon: BarChart3 },
   ];
@@ -95,6 +94,22 @@ export default function Layout({ children, activeTab, setActiveTab, userEmail }:
                 MySamsat
               </motion.span>
             )}
+          </div>
+
+          {/* New Transaction Button */}
+          <div className="px-4 mb-4">
+            <Button
+              onClick={() => setActiveTab('new-transaction')}
+              className={cn(
+                "w-full flex items-center gap-3 h-12 rounded-xl transition-all duration-300 shadow-lg",
+                activeTab === 'new-transaction'
+                  ? "bg-blue-600 text-white shadow-blue-500/40"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
+              )}
+            >
+              <PlusCircle className="w-5 h-5 shrink-0" />
+              {isSidebarOpen && <span className="font-bold">Transaksi Baru</span>}
+            </Button>
           </div>
 
           {/* Navigation */}

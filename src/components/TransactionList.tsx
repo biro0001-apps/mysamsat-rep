@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle, Trash2, X } from 'lucide-react';
+import { Search, Filter, Download, FileText, Edit2, CheckCircle2, Clock, ArrowRight, CheckCircle, Trash2, X, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,10 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface TransactionListProps {
   onEdit?: (transaction: Transaction) => void;
+  onNew?: () => void;
 }
 
-export default function TransactionList({ onEdit }: TransactionListProps) {
+export default function TransactionList({ onEdit, onNew }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +178,13 @@ export default function TransactionList({ onEdit }: TransactionListProps) {
           </Button>
           <Button variant="outline" size="icon" className="dark:border-slate-700 dark:hover:bg-slate-800">
             <Download className="h-4 w-4" />
+          </Button>
+          <Button 
+            onClick={onNew}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Transaksi Baru</span>
           </Button>
         </div>
       </CardHeader>
