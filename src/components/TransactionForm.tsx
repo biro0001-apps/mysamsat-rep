@@ -598,31 +598,35 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
           </div>
         </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-end gap-6">
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-xs text-slate-500 font-medium">Total Tagihan</p>
-                <p className="text-2xl font-black text-blue-600">
-                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {editingTransaction && (
-                  <Button 
-                    type="button" 
-                    variant="destructive" 
-                    onClick={handleCancelTransaction}
-                    className="bg-red-900 hover:bg-red-950 text-white"
-                  >
-                    Batalkan Transaksi
-                  </Button>
-                )}
-                {onCancel && (
-                  <Button type="button" variant="ghost" onClick={handleCancel}>Batal</Button>
-                )}
-                <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-                  {loading ? 'Memproses...' : <><Save className="w-4 h-4 mr-2" /> Simpan Perubahan</>}
+          <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              {editingTransaction && (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={handleCancelTransaction}
+                  className="bg-red-950/40 hover:bg-red-950/60 text-red-200 border border-red-900/30 px-6"
+                >
+                  Batalkan Transaksi
                 </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-4">
+                {onCancel && (
+                  <Button type="button" variant="ghost" onClick={handleCancel} className="font-bold text-slate-600 dark:text-slate-300">Batal</Button>
+                )}
+                <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-12 rounded-xl shadow-lg shadow-blue-500/20 font-bold">
+                  {loading ? 'Memproses...' : <><Save className="w-5 h-5 mr-2" /> Simpan Perubahan</>}
+                </Button>
+              </div>
+
+              <div className="text-right min-w-[120px]">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Total Tagihan</p>
+                <p className="text-4xl font-black text-blue-600 leading-none">
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount).replace('Rp', 'Rp ')}
+                </p>
               </div>
             </div>
           </div>
