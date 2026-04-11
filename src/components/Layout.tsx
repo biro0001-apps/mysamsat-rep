@@ -20,10 +20,11 @@ interface LayoutProps {
   children: ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onNewTransaction?: () => void;
   userEmail?: string;
 }
 
-export default function Layout({ children, activeTab, setActiveTab, userEmail }: LayoutProps) {
+export default function Layout({ children, activeTab, setActiveTab, onNewTransaction, userEmail }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -99,7 +100,7 @@ export default function Layout({ children, activeTab, setActiveTab, userEmail }:
           {/* New Transaction Button */}
           <div className="px-4 mb-4">
             <Button
-              onClick={() => setActiveTab('new-transaction')}
+              onClick={onNewTransaction}
               className={cn(
                 "w-full flex items-center gap-3 h-12 rounded-xl transition-all duration-300 shadow-lg",
                 activeTab === 'new-transaction'

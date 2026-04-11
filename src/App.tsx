@@ -36,6 +36,11 @@ export default function App() {
     setActiveTab('new-transaction');
   };
 
+  const handleNewTransaction = () => {
+    setEditingTransaction(null);
+    setActiveTab('new-transaction');
+  };
+
   const handleSuccess = () => {
     setEditingTransaction(null);
     setActiveTab('transactions');
@@ -59,7 +64,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onNew={() => setActiveTab('new-transaction')} />;
+        return <Dashboard onNew={handleNewTransaction} />;
       case 'new-transaction':
         return (
           <TransactionForm 
@@ -72,9 +77,9 @@ export default function App() {
           />
         );
       case 'transactions':
-        return <TransactionList onEdit={handleEdit} onNew={() => setActiveTab('new-transaction')} />;
+        return <TransactionList onEdit={handleEdit} onNew={handleNewTransaction} />;
       case 'reports':
-        return <Dashboard onNew={() => setActiveTab('new-transaction')} />; // Reuse dashboard for now as it has charts
+        return <Dashboard onNew={handleNewTransaction} />; // Reuse dashboard for now as it has charts
       default:
         return <Dashboard />;
     }
@@ -84,6 +89,7 @@ export default function App() {
     <Layout 
       activeTab={activeTab} 
       setActiveTab={setActiveTab} 
+      onNewTransaction={handleNewTransaction}
       userEmail={user.email}
     >
       <AnimatePresence mode="wait">
