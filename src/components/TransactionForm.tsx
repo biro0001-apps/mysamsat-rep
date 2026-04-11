@@ -58,11 +58,11 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
   const [profit, setProfit] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
 
-  const hasAllNewDocs = formData.selected_docs.length > 0 && formData.selected_docs.every(docType => 
+  const hasAtLeastOneNewDoc = formData.selected_docs.length > 0 && formData.selected_docs.some(docType => 
     newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url
   );
   const isStage2Disabled = !formData.tax_amount || !formData.service_fee;
-  const isStage3Disabled = !hasAllNewDocs;
+  const isStage3Disabled = !hasAtLeastOneNewDoc;
 
   useEffect(() => {
     if (editingTransaction) {
@@ -225,7 +225,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
     }
 
     if (status === 'Selesai' && isStage3Disabled) {
-      alert('Gagal: Semua dokumen baru wajib diupload untuk status Selesai.');
+      alert('Gagal: Minimal satu dokumen baru wajib diupload untuk status Selesai.');
       return;
     }
 
@@ -609,7 +609,7 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
                       return;
                     }
                     if (v === 'Selesai' && isStage3Disabled) {
-                      alert('Tahap Selesai terkunci: Mohon upload semua Dokumen Baru terlebih dahulu.');
+                      alert('Tahap Selesai terkunci: Mohon upload minimal satu Dokumen Baru terlebih dahulu.');
                       return;
                     }
                     setStatus(v);

@@ -71,9 +71,9 @@ export default function TransactionList({ onEdit, onNew }: TransactionListProps)
     }
     
     if (newStatus === 'Selesai') {
-      const hasAllNewDocs = t.documents?.length > 0 && t.documents.every(doc => doc.new_url);
-      if (!hasAllNewDocs) {
-        alert('Gagal: Semua dokumen baru (hasil pengurusan) wajib diupload sebelum menyelesaikan transaksi.\n\nSistem akan membuka data ini untuk Anda lengkapi.');
+      const hasAtLeastOneNewDoc = t.documents?.length > 0 && t.documents.some(doc => doc.new_url);
+      if (!hasAtLeastOneNewDoc) {
+        alert('Gagal: Minimal satu dokumen baru (hasil pengurusan) wajib diupload sebelum menyelesaikan transaksi.\n\nSistem akan membuka data ini untuk Anda lengkapi.');
         onEdit?.(t);
         return;
       }
