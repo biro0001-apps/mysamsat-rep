@@ -220,8 +220,15 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
       if (!user) throw new Error('User not authenticated');
 
       // Prepare documents array
+      const allDocTypes = Array.from(new Set([
+        ...formData.selected_docs,
+        ...Object.keys(oldFiles),
+        ...Object.keys(newFiles),
+        ...(editingTransaction?.documents?.map(d => d.type) || [])
+      ]));
+
       const documents: TransactionDocument[] = await Promise.all(
-        formData.selected_docs.map(async (docType) => {
+        allDocTypes.map(async (docType) => {
           const existingDoc = editingTransaction?.documents?.find(d => d.type === docType);
           let old_url = existingDoc?.old_url;
           let new_url = existingDoc?.new_url;
@@ -520,10 +527,14 @@ export default function TransactionForm({ onSuccess, editingTransaction, onCance
               <div className="space-y-4">
               <Label>Upload Hasil Pengurusan (Dokumen Baru)</Label>
               <div className="grid grid-cols-1 gap-3">
-                {formData.selected_docs.map((docType) => (
+                {DOCUMENT_TYPES.map((docType) => (
                   <div key={`new-${docType}`} className="flex flex-col md:flex-row md:items-center gap-4 p-3 rounded-lg border dark:border-slate-800 bg-emerald-50/20 dark:bg-emerald-900/10">
                     <div className="flex items-center gap-3 min-w-[120px]">
-                      <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center">
+                      <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+                        (newFiles[docType] || editingTransaction?.documents?.find(d => d.type === docType)?.new_url)
+                          ? 'bg-emerald-600'
+                          : 'bg-slate-200 dark:bg-slate-700'
+                      }`}>
                         <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                       <span className="text-sm font-bold">{docType}</span>
